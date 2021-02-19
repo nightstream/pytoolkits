@@ -94,12 +94,12 @@ def getFileData(dirpath):
     return filedata
 
 
-def geneJsonFile(dirpath, filedata):
+def geneJsonFile(dirpath, filedata, jsonfile):
     """生成json"""
-    jsonfile = os.path.join(dirpath, "filedata.json")
+    if not jsonfile:
+        jsonfile = os.path.join(srcdir, "filedata.json")
     if os.path.exists(jsonfile):
         raise Exception("文件已存在")
-
     with open(jsonfile, "w") as f:
         json.dump(filedata, f, indent=4, cls=JEncoder)
     return jsonfile
@@ -146,15 +146,19 @@ def checkDir(srcdir, tgtdir, jsonfile=None):
 
 def gatherDirData():
     """采集目录内容"""
-    dirpath = input("输入文件路径:")
-    jsonfile = geneJsonFile(dirpath, getFileData(dirpath))
+    dirpath = input("输入目录路径: ")
+    jsonfile = os.path.join(dirpath, "filedata.json")
+    jsonfile = input(f"输入json文件路径(默认{jsonfile}): ").strip() or jsonfile
+    if os.path.exists(jsonfile):
+        raise Exception("文件已存在")
+    jsonfile = geneJsonFile(dirpath, getFileData(dirpath), jsonfile)
 
 
 def syncAndCopy():
-    dirpath = input("输入文件路径:")
+    dirpath = input("输入目录路径: ")
     jsonfile = os.path.join(dirpath, "filedata.json")
-    jsonfile = input(f"输入json文件路径(默认{jsonfile}):").strip()
-    tgtdir = input("输入目标目录路径:")
+    jsonfile = input(f"输入json文件路径(默认{jsonfile}): ").strip()
+    tgtdir = input("输入目标目录路径: ")
     checkDir(dirpath, tgtdir, jsonfile)
 
 
@@ -162,15 +166,18 @@ def main():
     """
     获取文件
     """
-    instro = "请选择需要的操作：\t\n1.生成目录数据\t\n2.复制文件\t\n3.退出\n:"
+    instro = "请选择需要的操作：\t\n1.生成目录数据\t\n2.复制文件\t\n3.退出\n: "
     p = input(instro)
     while p != "3":
-        if p == "1":
-            gatherDirData()
-        elif p == "2":
-            syncAndCopy()
-        else:
-            print("无此项\n")
+        try:
+            if p == "1":
+                gatherDirData()
+            elif p == "2":
+                syncAndCopy()
+            else:
+                print("无此项: {p}\n")
+        except Exception as e:
+            print(f"错误参数: {e}")
         p = input(instro)
 
 
