@@ -155,7 +155,7 @@ def gatherDirData():
 
 
 def syncAndCopy():
-    dirpath = input("输入目录路径: ")
+    dirpath = input("输入源目录路径: ")
     jsonfile = os.path.join(dirpath, "filedata.json")
     jsonfile = input(f"输入json文件路径(默认{jsonfile}): ").strip()
     tgtdir = input("输入目标目录路径: ")
