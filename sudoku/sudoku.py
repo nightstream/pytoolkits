@@ -1,9 +1,6 @@
 #coding=utf-8
 """解数独"""
 
-import re
-from copy import deepcopy
-
 
 class Sudoku(object):
     """数独"""
