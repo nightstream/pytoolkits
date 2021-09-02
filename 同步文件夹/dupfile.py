@@ -58,6 +58,17 @@ class FileDataBaseMysql(object):
     def __init__(self, dbconf, bufsize=200):
         self.bufsize = bufsize
         self.db = MySQLdb.connect(**dbconf)
+        sql = """CREATE TABLE IF NOT EXISTS `filedata` (
+                    `id` INT(11) NOT NULL AUTO_INCREMENT,
+                    `name` VARCHAR(300) NOT NULL DEFAULT '0',
+                    `fpath` VARCHAR(2048) NOT NULL DEFAULT '0',
+                    `filemd5` VARCHAR(32) NOT NULL DEFAULT '0',
+                    `filesha1` VARCHAR(64) NOT NULL DEFAULT '0',
+                    `size` BIGINT(20) NOT NULL DEFAULT 0,
+                    PRIMARY KEY (`id`)
+                )
+                ENGINE=InnoDB"""
+        self.db.cursor().execute(sql)
 
     def addData(self, line):
         """添加数据"""
