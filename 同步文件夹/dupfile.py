@@ -65,9 +65,20 @@ class FileDataBaseMysql(object):
                     `filemd5` VARCHAR(32) NOT NULL DEFAULT '0',
                     `filesha1` VARCHAR(64) NOT NULL DEFAULT '0',
                     `size` BIGINT(20) NOT NULL DEFAULT 0,
+                    `createtime` DATETIME NOT NULL DEFAULT current_timestamp(),
                     PRIMARY KEY (`id`)
                 )
-                ENGINE=InnoDB"""
+                ENGINE=InnoDB;
+                CREATE TABLE IF NOT EXISTS `fileerror` (
+                    `id` INT(11) NOT NULL AUTO_INCREMENT,
+                    `fpath` VARCHAR(2048) NOT NULL DEFAULT '0',
+                    `error` VARCHAR(2048) NOT NULL DEFAULT '0',
+                    `errtype` VARCHAR(50) NULL DEFAULT NULL,
+                    `createtime` DATETIME NOT NULL DEFAULT current_timestamp(),
+                    PRIMARY KEY (`id`)
+                )
+                COLLATE='utf8_general_ci'
+                ENGINE=InnoDB;"""
         self.db.cursor().execute(sql)
 
     def addData(self, line):
@@ -90,6 +101,11 @@ class FileDataBaseMysql(object):
         self.cursor.close()
         self.db.close()
 
+    def saveError(self, fpath, error):
+        cursor = self.db.cursor()
+        sql = 'INSERT INTO fileerror (fpath, error, errtype) VALUES (%s, %s, %s)'
+        cursor.execute(sql, (fpath, str(error), str(type(error))))
+
 
 class FileWalker(Process):
 
@@ -104,14 +120,23 @@ class FileWalker(Process):
         self.queue = queue
 
     def run(self):
+        num = 0
         for diritem in self.dirpath:
             for root, dirs, files in os.walk(diritem):
+                self._printFilePath(f"目录{root}开始: {num}")
                 for fitem in files:
                     fpath = os.path.join(root, fitem)
                     self.queue.put(fpath, block=True)
-                    print(fpath)
+                    num += 1
+                self._printFilePath(f"目录{root}结束: {num}")
         for i in range(workernum):
             self.queue.put("---done---")
+
+    def _printFilePath(self, fpath):
+        try:
+            print(fpath)
+        except Exception as e:
+            pass
 
 
 class FileSumWorker(Process):
@@ -126,14 +151,13 @@ class FileSumWorker(Process):
     def run(self):
         while True:
             fpath = self.queue.get()
-            print(f"read out: {fpath}")
             if fpath == "---done---":
                 break
             try:
                 data = self._getFileData(fpath)
                 self.filedb.addData(data)
-            except PermissionError as e:
-                print(f"======{e}")
+            except Exception as e:
+                self.filedb.saveError(fpath, e)
         self.filedb._commitData()
 
     def _read_chunks(self, fh, size=8096):
